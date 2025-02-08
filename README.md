@@ -1,171 +1,216 @@
 # eyeROV-Assignment
 
-This ROS2 package provides a node to communicate with a sensor over TCP, decode its data, and publish the decoded parameters to ROS2 topics. It also includes a service to stop the sensor data stream.
+This ROS2 package provides nodes to communicate with a sensor over TCP, decode its data, and publish the decoded parameters to ROS2 topics. It includes both Python and C++ implementations, along with a sensor simulator for testing.
 
----
-
-## **Table of Contents**
+## Table of Contents
 1. [Overview](#overview)
 2. [Prerequisites](#prerequisites)
-3. [Installation](#installation)
-4. [Building the Package](#building-the-package)
-5. [Running the Node](#running-the-node)
-6. [Using the Stop Service](#using-the-stop-service)
+3. [Implementation Details](#implementation-details)
+4. [Installation](#installation)
+5. [Building the Package](#building-the-package)
+6. [Running the Nodes](#running-the-nodes)
 7. [Topics and Messages](#topics-and-messages)
-8. [Service Definition](#service-definition)
+8. [Technical Pipeline](#technical-pipeline)
 9. [Testing with Sensor Simulator](#testing-with-sensor-simulator)
-10. [Results](#Results)
-
+10. [Results](#results)
 
 ---
 
-## **Overview**
+## Overview
 This package contains:
-- A ROS2 node (`sensor_node.py`) that:
-  - Connects to a sensor over TCP.
-  - Sends a start command to the sensor with a configurable interval.
-  - Receives and decodes status messages from the sensor.
-  - Publishes the decoded data (voltage, temperature, yaw, pitch, roll) to ROS2 topics.
-  - Provides a service to stop the sensor data stream.
-- A sensor simulator (`sensor_simulator.py`) for testing the node.
+- A Python ROS2 node (`sensor_node.py`) that handles sensor communication
+- A C++ ROS2 node (`sensor_node.cpp`) providing the same functionality
+- A Python-based sensor simulator (`sensor_simulator.py`) for testing both implementations
+- Service definitions for controlling the sensor
+- Launch files for easy deployment
+
+Both implementations provide identical functionality:
+- TCP connection management with the sensor
+- Configurable start command with interval setting
+- Status message decoding and publishing
+- ROS2 topic publishing for sensor data
+- Service interface for stopping the sensor
 
 ---
 
-## **Prerequisites**
-- **Operating System**: Ubuntu 22.04 (recommended) or any Linux distribution supporting ROS2.
-- **ROS2**: Install ROS2 Humble Hawksbill or later. Follow the [official installation guide](https://docs.ros.org/en/humble/Installation.html).
-- **Python**: Python 3.8 or later.
-- **Git**: Install Git for version control:
+## Prerequisites
+- **Operating System**: Ubuntu 22.04 (recommended)
+- **ROS2**: ROS2 Humble Hawksbill or later
+- **Python**: Python 3.8 or later (for Python implementation)
+- **C++**: C++17 or later (for C++ implementation)
+- **Build Tools**:
   ```
-  sudo apt install git
+  sudo apt install build-essential cmake python3-colcon-common-extensions
   ```
---- 
+- **ROS2 Dependencies**:
+  ```
+  sudo apt install ros-jazzy-rclcpp ros-jazzy-std-msgs
+  ```
+
+---
+
+## Implementation Details
+
+### Python Implementation
+- Uses `rclpy` for ROS2 integration
+- Threading for concurrent operations
+- Socket programming using Python's `socket` library
+- Standard Python data structures
+
+### C++ Implementation
+- Uses `rclcpp` for ROS2 integration
+- POSIX sockets for TCP communication
+- Standard C++ threading model
+- Modern C++ features (C++17)
+- Efficient binary data handling
+
+---
 
 ## Installation
-- Clone this repository:
-  ```
-  git clone https://github.com/Varun-Ajith/eyeROV-Assignment.git
-  cd sensor_interface
-  ```
-- Build the workspace:
-  ```
-  colcon build
-  ```
-- Source the workspace:
-  ```
-  source install/setup.bash
-  ```
----
+1. Clone the repository:
+   ```
+   git clone https://github.com/Varun-Ajith/eyeROV-Assignment.git
+   cd eyeROV-Assignment
+   ```
+
+2. Create a ROS2 workspace:
+   ```bash
+   mkdir -p ~/ros2_ws/src
+   cp -r eyeROV-Assignment ~/ros2_ws/src/
+   cd ~/ros2_ws
+   ```
+
 ## Building the Package
 
-- Navigate to the workspace:
-  ```
-  cd sensor_interface
-  ```
-- Build the package:
-  ```
-  colcon build
-  ```
-- Source the workspace:
-  ```
-  source install/setup.bash
-  ```
+1. Install dependencies
+   
+2. Build the workspace:
+   ```
+   colcon build
+   ```
+   
+3. Source the workspace:
+   ```
+   source install/setup.bash
+   ```
 ---
 
-## Running the Node
+## Running the Nodes
 
-- Start the sensor simulator:
-```
-  python3 sensor_simulator.py
-```
-- Run the ROS2 node:
-```
-  ros2 run sensor_interface sensor_node
-```
-- The node will:
-  - Connect to the sensor.
-  - Send the start command with the default interval (1000ms).
-  - Publish sensor data to ROS2 topics.
+1. Start the sensor simulator:
+   ```
+   python3 sensor_simulator.py
+   ```
 
----
+2. Run either implementation:
 
-## Using the Stop Service
+   For Python:
+   ```
+   ros2 run sensor_interface sensor_node
+   ```
 
-To stop the sensor data stream:
-
-- Call the stop service:
-```
-  ros2 service call /stop_sensor interface/srv/StopSensor
-```
-- The node will send the stop command (`#09`) to the sensor and stop publishing data.
+   For C++:
+   ```
+   ros2 run sensor_interface sensor_node_cpp
+   ```
 
 ---
 
 ## Topics and Messages
 
-The node publishes the following topics:
+Both implementations publish to the same topics:
 
-| **Topic Name**                      | **Message Type**                      | **Description**                             |
-|-------------------------------------|---------------------------------------|---------------------------------------------|
-| `/sensor/supply_voltage`            |	`std_msgs/msg/UInt16`	                | Voltage supplied to the sensor (in mV).     |
-| `/sensor/env_temp`	                | `std_msgs/msg/Int16`                	| Temperature of the sensor (in deci-Celsius).|
-| `/sensor/yaw`	                      | `std_msgs/msg/Int16`                  | Yaw angle of the sensor (in deci-degrees).  |
-| `/sensor/pitch`	                    | `std_msgs/msg/Int16`                  |	Pitch angle of the sensor (in deci-degrees).|
-| `/sensor/roll`                      |	`std_msgs/msg/Int16`                  |	Roll angle of the sensor (in deci-degrees). |
-
+| **Topic Name**           | **Message Type**  | **Description**            |
+|--------------------------|-------------------|----------------------------|
+| `/sensor/supply_voltage` | `std_msgs/UInt16` | Sensor voltage (mV)        |
+| `/sensor/env_temp`       | `std_msgs/Int16`  | Temperature (deci-°C)      |
+| `/sensor/yaw`            | `std_msgs/Int16`  | Yaw angle (deci-degrees)   |
+| `/sensor/pitch`          | `std_msgs/Int16`  | Pitch angle (deci-degrees) |
+| `/sensor/roll`           | `std_msgs/Int16`  | Roll angle (deci-degrees)  |
 
 ---
 
-## Service Definition
+## Technical Pipeline
 
-The node provides a service to stop the sensor data stream:
+### C++ Implementation Pipeline
+1. **Socket Setup**
+   - POSIX socket creation
+   - TCP connection establishment
+   - Non-blocking I/O configuration
 
-  - Service Name: `/stop_sensor`
+2. **Data Processing**
+   - Binary data handling using `struct` packing
+   - Little-endian conversion
+   - Thread-safe data processing
 
-  - Service Type: `interface/srv/StopSensor`
+3. **ROS2 Integration**
+   - `rclcpp` node setup
+   - Publisher management
+   - Parameter handling
 
-  - Request: Empty
+4. **Memory Management**
+   - Smart pointers for resource management
+   - RAII principles
+   - Exception-safe design
 
-  - Response:
+### Python Implementation Pipeline
+1. **Socket Setup**
+   - Python socket library
+   - TCP connection handling
+   - Threaded communication
 
-    - `bool success`: Indicates whether the stop command was sent successfully.
+2. **Data Processing**
+   - `struct` module for binary data
+   - ASCII hex decoding
+   - Thread-safe operations
+
+3. **ROS2 Integration**
+   - `rclpy` node setup
+   - Publisher configuration
+   - Parameter management
 
 ---
 
 ## Testing with Sensor Simulator
 
-- Run the sensor simulator:
-```
-  python3 sensor_simulator.py
-```
-- Run the ROS2 node:
-```
-  ros2 run sensor_interface sensor_node
-```
-- Observe the published data:
-```
-    ros2 topic echo /sensor/supply_voltage
-    ros2 topic echo /sensor/env_temp
-    ros2 topic echo /sensor/yaw
-    ros2 topic echo /sensor/pitch
-    ros2 topic echo /sensor/roll
-```
-- Stop the sensor data stream:
-```
-  ros2 service call /stop_sensor interface/srv/StopSensor
-```
+1. Start the simulator:
+   ```
+   python3 sensor_simulator.py
+   ```
+
+2. Monitor topics:
+   ```
+   ros2 topic echo /sensor/supply_voltage
+   ros2 topic echo /sensor/env_temp
+   ros2 topic echo /sensor/yaw
+   ros2 topic echo /sensor/pitch
+   ros2 topic echo /sensor/roll
+   ```
+
+3. Stop the sensor:
+   ```
+   ros2 service call /stop_sensor interface/srv/StopSensor
+   ```
+
 ---
 
 ## Results
 
-![Results](eyeROV.gif)
+Both implementations achieve similar performance metrics:
+- Reliable TCP communication
+- Accurate data decoding
+- Real-time publishing capabilities
+- Thread-safe operations
+- Resource-efficient execution
 
----
+For visual results, refer to the included demonstration GIF.
 
-For questions or feedback, please contact:
+|  **Python**                |  **C++**                    |
+|----------------------------|-----------------------------|
+|![eyeROVpython](eyeROV.gif) | ![eyeROVcpp](eyeROVcpp.gif) | 
 
-  - Name: Varun Ajith
+## Contact Information
 
-  - Email: [varunajithvarun@gmail.com](varunajithvarun@gmail.com)
-
-  - GitHub: [Varun-Ajith](https://github.com/Varun-Ajith)
+- Name: Varun Ajith
+- Email: [varunajithvarun@gmail.com](varunajithvarun@gmail.com)
+- GitHub: [Varun-Ajith](https://github.com/Varun-Ajith)
