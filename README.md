@@ -14,8 +14,7 @@ This ROS2 package provides a node to communicate with a sensor over TCP, decode 
 7. [Topics and Messages](#topics-and-messages)
 8. [Service Definition](#service-definition)
 9. [Testing with Sensor Simulator](#testing-with-sensor-simulator)
-10. [Contributing](#contributing)
-11. [License](#license)
+
 
 ---
 
